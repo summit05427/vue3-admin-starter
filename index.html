@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>%VITE_APP_TITLE%</title>
+    <script>
+      // 首屏提前应用主题，避免暗色用户看到白色闪烁
+      ;(function () {
+        try {
+          var raw = localStorage.getItem('app-state')
+          var state = raw ? JSON.parse(raw) : null
+          var stored = state ? state.theme : null
+          var mode =
+            stored === 'light' || stored === 'dark' || stored === 'system' ? stored : 'system'
+          var isDark =
+            mode === 'dark' ||
+            (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document.documentElement.classList.toggle('dark', isDark)
+        } catch (error) {
+          // 读取失败时保持默认浅色主题
+        }
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
