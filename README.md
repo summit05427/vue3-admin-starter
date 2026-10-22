@@ -1,4 +1,4 @@
-# PingPong Analytica Web
+# Vue3 Admin Starter
 
 基于 Vue 3 + TypeScript + Vite 的前端启动模板：内置多环境配置、三态主题、国际化、统一请求层、模块化路由与响应式布局，可直接作为新项目的基础骨架。
 
