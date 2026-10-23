@@ -11,8 +11,8 @@ export const mainRoutes: RouteRecordRaw[] = [
         path: '',
         name: ROUTE_NAMES.home,
         component: () => import('@/views/home/index.vue'),
-        // requiresAuth 待业务基座阶段登录功能就绪后开启
-        meta: { titleKey: 'routes.home', icon: House },
+        // 首页默认要求登录，登录态由 auth store + /auth/me 恢复
+        meta: { titleKey: 'routes.home', icon: House, requiresAuth: true },
       },
       {
         path: '403',

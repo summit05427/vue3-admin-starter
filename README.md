@@ -56,13 +56,13 @@ pnpm dev
 
 配置按环境分层：`.env` 放公共项，`.env.development` / `.env.production` 放环境差异项，`.env.local` 存放本地覆盖且已被 `.gitignore` 忽略。`VITE_` 前缀的变量会打包进前端产物，禁止写入密钥、Token 或内网地址。
 
-| 变量                | 必填 | 默认值  | 说明                                        |
-| ------------------- | ---- | ------- | ------------------------------------------- |
-| `VITE_APP_TITLE`    | 是   | 无      | 应用标题，用于页面标题与品牌展示            |
-| `VITE_APP_ENV`      | 是   | 无      | 环境标识，可选 `development` / `production` |
-| `VITE_API_BASE_URL` | 是   | 无      | 接口基础地址                                |
-| `VITE_API_TIMEOUT`  | 否   | `10000` | 请求超时时间（毫秒）                        |
-| `VITE_USE_MOCK`     | 否   | `false` | Mock 开关占位，当前未接入实现               |
+| 变量                | 必填 | 默认值  | 说明                                                            |
+| ------------------- | ---- | ------- | --------------------------------------------------------------- |
+| `VITE_APP_TITLE`    | 是   | 无      | 应用标题，用于页面标题与品牌展示                                |
+| `VITE_APP_ENV`      | 是   | 无      | 环境标识，可选 `development` / `production`                     |
+| `VITE_API_BASE_URL` | 是   | 无      | 接口基础地址，必须带版本前缀，如 `http://localhost:8080/api/v1` |
+| `VITE_API_TIMEOUT`  | 否   | `10000` | 请求超时时间（毫秒）                                            |
+| `VITE_USE_MOCK`     | 否   | `false` | Mock 开关占位，当前未接入实现                                   |
 
 环境变量统一由 `src/config/env.ts` 读取并校验，缺失或取值非法会在启动时直接抛错，业务代码不要直接访问 `import.meta.env`。
 
@@ -114,14 +114,21 @@ src/
 
 ### 请求层
 
-- 响应契约统一为 `{ code, data, message }`，`code === 0` 视为成功，`request<T>()` 直接返回 `data`。
+- 响应契约统一为 `{ code, data, message, requestId }`，`code === 0` 视为成功，`request<T>()` 直接返回 `data`。
 - 业务错误、超时、网络异常、HTTP 错误均转换为 `ApiError`，并通过 vue-sonner 统一提示。
 - 401 由请求层触发事件，路由层注册处理函数完成清理登录态与跳转登录页，避免请求层依赖 router。
 - 主动取消的请求不弹错误提示。
 
 ### 认证
 
-`auth` store 只管理 token 与登录态。当前 `/auth/login`、`/auth/logout`、`/auth/profile` 为模板占位接口，接入真实后端时替换路径与字段即可。token 由持久化插件写入 `app-token`，请求层通过 `src/api/token.ts` 只读访问同一份存储，不依赖 Pinia；后续若改用 Cookie，只需替换该文件。
+对接后端 `pingpong-application-service` 的无状态 JWT：
+
+- 登录调用 `POST /api/v1/auth/login`，成功后 token 写入 `auth` store，同时通过 `src/api/token.ts` 落到 `sessionStorage`（关闭标签页即失效），保证登录后紧接着的 `/auth/me` 能带上 `Authorization`。
+- 用户资料不持久化，刷新页面由路由守卫调用 `GET /api/v1/auth/me` 恢复用户名与角色；失败则清空登录态并跳转登录页。
+- 请求层拦截器统一注入 `Authorization: Bearer <token>`；收到 401 清 token 并跳登录页，403 由统一错误提示展示。
+- 退出登录只清本地凭证，无状态 JWT 没有服务端登出接口。
+
+本地联调步骤：后端以 `local` profile 启动（默认放开 `http://localhost:5173` 跨域），前端 `.env.development` 的 `VITE_API_BASE_URL` 指向 `http://localhost:8080/api/v1`，`pnpm dev` 后用后端配置的 `AUTH_USERNAME` / `AUTH_PASSWORD` 登录。
 
 ## 新增一个页面
 
@@ -142,8 +149,8 @@ src/
 
 ## 已知占位与后续工作
 
-- `/auth/*` 为占位接口，未与真实后端联调。
-- 路由 `meta.requiresAuth` 已具备守卫逻辑，但首页尚未开启；业务接入后按需在路由上声明即可。
+- 用户管理与权限分配页面尚未实现，`auth` 当前只覆盖登录、当前用户与退出。
+- 首页已开启 `requiresAuth`，新增业务页面需在路由 `meta` 中显式声明才会受登录守卫保护。
 - `VITE_USE_MOCK` 仅保留配置位，尚未接入 Mock 实现。
 - `src/api/index.ts` 为可选的统一导出入口，当前项目内直接按路径引用。
 - 依赖清单与版本说明见 [docs/dependencies.md](./docs/dependencies.md)。

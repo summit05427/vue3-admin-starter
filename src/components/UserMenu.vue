@@ -7,6 +7,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/stores/auth'
@@ -17,7 +19,8 @@ const router = useRouter()
 const { t } = useI18n()
 
 const handleLogout = async (): Promise<void> => {
-  await authStore.logout()
+  // 无状态 JWT 直接丢弃本地凭证即可，不需要调用服务端
+  authStore.logout()
   await router.replace({ name: ROUTE_NAMES.login })
 }
 </script>
@@ -31,6 +34,8 @@ const handleLogout = async (): Promise<void> => {
     </DropdownMenuTrigger>
 
     <DropdownMenuContent align="end">
+      <DropdownMenuLabel>{{ authStore.username }}</DropdownMenuLabel>
+      <DropdownMenuSeparator />
       <DropdownMenuItem @select="handleLogout">
         <LogOut class="mr-2 size-4" />
         {{ t('layout.logout') }}

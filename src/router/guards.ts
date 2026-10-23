@@ -10,7 +10,7 @@ const resolveRedirect = (fullPath: string): string | undefined =>
   fullPath.startsWith('/login') ? undefined : fullPath
 
 export const setupRouterGuards = (router: Router): void => {
-  router.beforeEach((to) => {
+  router.beforeEach(async (to) => {
     NProgress.start()
 
     const authStore = useAuthStore()
@@ -18,6 +18,14 @@ export const setupRouterGuards = (router: Router): void => {
     // 未登录访问受限页面时跳转登录页，并携带回跳地址
     if (to.meta.requiresAuth && !authStore.isLoggedIn) {
       return { name: ROUTE_NAMES.login, query: { redirect: to.fullPath } }
+    }
+
+    // 刷新页面后 token 仍在、用户资料丢失，用 /auth/me 恢复一次
+    if (to.meta.requiresAuth && authStore.isLoggedIn && !authStore.user) {
+      const hasUser = await authStore.ensureCurrentUser()
+      if (!hasUser) {
+        return { name: ROUTE_NAMES.login, query: { redirect: to.fullPath } }
+      }
     }
 
     // 已登录用户不再停留在登录页

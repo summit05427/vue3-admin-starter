@@ -7,12 +7,18 @@ export interface LoginParams {
 
 export interface LoginResult {
   token: string
+  tokenType: string
+  expiresIn: number
 }
 
-// 模板占位接口：接入真实后端时替换路径与字段，并补齐刷新 token 等约定
+export interface CurrentUser {
+  username: string
+  roles: string[]
+}
+
+// 后端接口约定见 docs/api-conventions.md，路径已包含 /api/v1 前缀，由 VITE_API_BASE_URL 提供
 export const login = (params: LoginParams): Promise<LoginResult> =>
   http.post<LoginResult>('/auth/login', params)
 
-export const logout = (): Promise<void> => http.post<void>('/auth/logout')
-
-export const getProfile = <TProfile>(): Promise<TProfile> => http.get<TProfile>('/auth/profile')
+// 刷新页面后用 token 换回用户名与角色，避免把用户资料长期落在浏览器里
+export const getCurrentUser = (): Promise<CurrentUser> => http.get<CurrentUser>('/auth/me')

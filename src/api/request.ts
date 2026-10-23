@@ -76,7 +76,8 @@ httpClient.interceptors.response.use(
 /** 统一请求入口：返回值直接是契约中的 data，失败时抛出 ApiError */
 export const request = async <T>(config: AxiosRequestConfig): Promise<T> => {
   const response = await httpClient.request<ApiResponse<T>>(config)
-  return response.data.data
+  // 后端成功响应必定带 data；无返回值的接口（如删除）在调用处声明为 void
+  return response.data.data as T
 }
 
 // 简写方法固定 url / method，避免调用处覆盖，其余配置保持可扩展
